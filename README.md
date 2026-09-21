@@ -109,7 +109,20 @@ There is no reference model and no scoreboard, on purpose.  Both monitors
 publish analysis ports, so a checker can be connected later without touching
 the stimulus path.
 
-## Getting the whole co-simulation (one clone)
+## Setup & configuration
+
+### Prerequisites
+
+| Tool | Version used | Notes |
+|---|---|---|
+| VCS | Q-2020.03-SP2 | compiles the RTL + TB (`simv`) |
+| Python | 3.12 | shared by cocotb, gem5 and the helpers |
+| cocotb | 2.1 | `pip install cocotb` |
+| pyuvm | 5.0 | `pip install pyuvm` |
+| scons, g++ | any recent | for the gem5 build (RISCV variant) |
+| Verdi (optional) | R-2020.12-SP1 | only for FSDB waveform viewing |
+
+### One-clone layout
 
 This repo carries the gem5 tree as a submodule (branch `c2xm_cosim`,
 which adds `ChiCosimBridge` — see its commit message):
@@ -117,20 +130,79 @@ which adds `ChiCosimBridge` — see its commit message):
 ```bash
 git clone --recurse-submodules https://github.com/makenma/c2xm_cosim.git
 cd c2xm_cosim
+```
 
-# 1) build gem5 (the submodule has no prebuilt binary)
-cd XS-DSU-GEM5 && scons build/RISCV/gem5.opt -j 32 && cd ..
+### Build gem5 (submodule, no prebuilt binary)
 
-# 2) point the TB at the C2XM RTL tree (generated code, not in git)
+```bash
+cd XS-DSU-GEM5
+scons build/RISCV/gem5.opt -j 32      # ~30-60 min the first time
+cd ..
+```
+
+The build must contain the `ChiCosimBridge` SimObject (it does on the
+`c2xm_cosim` branch; check `build/RISCV/mem/cache/CHI/ChiCosimBridge.hh`
+exists after the build).
+
+### Point the TB at the RTL
+
+The C2XM RTL is generated code and lives outside git.  The TB Makefile
+resolves it through `C2XM_ROOT`:
+
+```bash
 export C2XM_ROOT=/path/to/c2xm_generated_dsl_core_20260916
+```
 
-# 3) run the co-simulation
-./run_cosim.sh
+Default when unset: `../c2xm_generated_dsl_core_20260916` relative to
+this directory (i.e. the `c2xm_exp/` source-tree layout), so exporting is
+only needed for a different placement.
+
+### Workload
+
+`run_cosim.sh` runs a XiangShan GCPT checkpoint by default
+(`/nfs/home/majunhong/workloads/ready-to-run/coremark-2-iteration.bin`);
+override with `C2XM_GCPT=/path/to/<workload>.bin`.
+
+### Configuration knobs
+
+`run_cosim.sh` wraps every tunable; the raw variables are listed here
+(launcher name -> what it sets):
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `C2XM_SOCK` | `/tmp/c2xm_cosim.sock` | UNIX socket between gem5 and the TB |
+| `C2XM_QUANTUM` | `100` | barrier period, in cycles (also sets gem5's `CHI_COSIM_QUANTUM`) |
+| `C2XM_NUM_CPUS` | `1` | gem5 CPU count — **keep 1**: multicore needs difftest/golden-mem (see Known issues) |
+| `C2XM_CLK_NS` | `0.334` | TB clock period in ns; keep 1:1 with gem5's system clock (3 GHz here). Must be representable in 1 ps and divisible by 2 |
+| `C2XM_GCPT` | NFS coremark path | GCPT checkpoint to restore |
+| `C2XM_WAVES` | `none` | `fsdb` (Verdi PLI, separate `sim_build_fsdb`) or `vcd` waveform dump |
+| `C2XM_MAX_SYNCS` | `0` | stop after N barriers (0 = run to workload exit) — use this instead of gem5 `--max-insts`, which kills this GCPT workload |
+| `C2XM_GEM5_ARGS` | – | extra gem5 CLI args |
+
+Low-level variables (usually only set when driving the two sides
+manually instead of via `run_cosim.sh`):
+
+| Variable | Side | Meaning |
+|---|---|---|
+| `CHI_COSIM_SOCKET` | gem5 | socket path the bridge listens on |
+| `CHI_COSIM_QUANTUM` | gem5 | barrier period (cycles) |
+| `CHI_COSIM_BYPASS_ROUTE` | gem5 | `all` \| `dram_only` \| `none` — how RNF bypass traffic crosses the co-sim |
+| `C2XM_COSIM_SOCK` | TB | socket path to connect to (test skips if unset) |
+| `C2XM_COSIM_CLK_NS` | TB | TB clock period |
+| `C2XM_COSIM_MAX_SYNCS` | TB | barrier budget |
+| `C2XM_COSIM_FREE_RUN` | TB | `1` = keep the clock free-running (debug; breaks strict 1:1 lockstep) |
+| `C2XM_COSIM_GEM5_CLK_NS` | TB | informational only (hello handshake) |
+
+### Run
+
+```bash
+./run_cosim.sh                                   # whole coremark run (~5 min)
+C2XM_WAVES=fsdb C2XM_MAX_SYNCS=800 ./run_cosim.sh   # short window + waveform
 ```
 
 `run_cosim.sh` picks the gem5 tree from `$GEM5_ROOT`, else the
-`XS-DSU-GEM5/` submodule, else the NFS source path.  The TB's Makefile
-takes the RTL from `$C2XM_ROOT` (default `../c2xm_generated_dsl_core_20260916`).
+`XS-DSU-GEM5/` submodule, else the NFS source path; logs and any
+waveform land in a fresh `/tmp/c2xm_cosim_run.*` directory.
 
 ## gem5 co-simulation
 
