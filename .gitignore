@@ -9,3 +9,7 @@ novas_dump.log
 __pycache__/
 *.pyc
 .cocotb/
+
+# XLS co-simulation build and regression artifacts
+/bin/
+/results/

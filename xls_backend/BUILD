@@ -1,0 +1,20 @@
+cc_binary(
+    name = "xls_proc_rpc_main",
+    srcs = ["xls_proc_rpc_main.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//xls/common:init_xls",
+        "//xls/common/file:filesystem",
+        "//xls/interpreter:channel_queue",
+        "//xls/interpreter:evaluator_options",
+        "//xls/interpreter:serial_proc_runtime",
+        "//xls/ir",
+        "//xls/ir:ir_parser",
+        "//xls/ir:value",
+        "//xls/jit:jit_evaluator_options",
+        "//xls/jit:jit_proc_runtime",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+    ],
+)
