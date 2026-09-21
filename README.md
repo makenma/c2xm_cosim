@@ -204,6 +204,14 @@ C2XM_WAVES=fsdb C2XM_MAX_SYNCS=800 ./run_cosim.sh   # short window + waveform
 `XS-DSU-GEM5/` submodule, else the NFS source path; logs and any
 waveform land in a fresh `/tmp/c2xm_cosim_run.*` directory.
 
+### XLS Proc-IR co-simulation
+
+The same gem5 bridge can run directly against optimized C2XM XLS Proc IR,
+without VCS or generated RTL. The XLS peer executes the real Proc network,
+proxies its AXI traffic into gem5's memory, and supports both full CoreMark and
+write-path stress runs. See [XLS_COSIM.md](XLS_COSIM.md) for build, launch and
+regression instructions.
+
 ## gem5 co-simulation
 
 The end goal of this environment: replace the gem5 SN-F
