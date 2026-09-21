@@ -1,0 +1,11 @@
+# simulation artifacts
+sim_build*/
+results.xml
+*.log
+*.fsdb
+*.vcd
+ucli.key
+novas_dump.log
+__pycache__/
+*.pyc
+.cocotb/
