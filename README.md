@@ -109,6 +109,29 @@ There is no reference model and no scoreboard, on purpose.  Both monitors
 publish analysis ports, so a checker can be connected later without touching
 the stimulus path.
 
+## Getting the whole co-simulation (one clone)
+
+This repo carries the gem5 tree as a submodule (branch `c2xm_cosim`,
+which adds `ChiCosimBridge` — see its commit message):
+
+```bash
+git clone --recurse-submodules https://github.com/makenma/c2xm_cosim.git
+cd c2xm_cosim
+
+# 1) build gem5 (the submodule has no prebuilt binary)
+cd XS-DSU-GEM5 && scons build/RISCV/gem5.opt -j 32 && cd ..
+
+# 2) point the TB at the C2XM RTL tree (generated code, not in git)
+export C2XM_ROOT=/path/to/c2xm_generated_dsl_core_20260916
+
+# 3) run the co-simulation
+./run_cosim.sh
+```
+
+`run_cosim.sh` picks the gem5 tree from `$GEM5_ROOT`, else the
+`XS-DSU-GEM5/` submodule, else the NFS source path.  The TB's Makefile
+takes the RTL from `$C2XM_ROOT` (default `../c2xm_generated_dsl_core_20260916`).
+
 ## gem5 co-simulation
 
 The end goal of this environment: replace the gem5 SN-F

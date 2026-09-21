@@ -1,0 +1,4 @@
+[submodule "XS-DSU-GEM5"]
+	path = XS-DSU-GEM5
+	url = https://github.com/makenma/XS-DSU-GEM5.git
+	branch = c2xm_cosim

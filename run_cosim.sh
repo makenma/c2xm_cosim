@@ -19,7 +19,14 @@
 set -u
 
 C2XM_ROOT="$(cd "$(dirname "$0")" && pwd)"
-GEM5_ROOT=${GEM5_ROOT:-/nfs/home/majunhong/project/XS-DSU-GEM5}
+# gem5 tree: submodule checkout inside this repo, or the source-tree path.
+if [ -n "${GEM5_ROOT:-}" ]; then
+    :
+elif [ -d "$C2XM_ROOT/XS-DSU-GEM5/src/mem/cache/CHI" ]; then
+    GEM5_ROOT="$C2XM_ROOT/XS-DSU-GEM5"
+else
+    GEM5_ROOT=/nfs/home/majunhong/project/XS-DSU-GEM5
+fi
 # repo layout: the env sits at the repo root; source-tree layout:
 # c2xm_exp/run_cosim.sh with the env in c2xm_exp/c2xm_pyuvm_env.
 if [ -f "$C2XM_ROOT/c2xm_env.py" ]; then
